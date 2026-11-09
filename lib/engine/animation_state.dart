@@ -18,6 +18,10 @@ class AnimationState {
   final double tapScale;
   final double tapOpacity;
   final double fadeOut;
+  final bool isError;
+  final bool isSuccess;
+  final bool isLoading;
+  final bool isValid;
 
   const AnimationState({
     required this.t,
@@ -36,13 +40,27 @@ class AnimationState {
     required this.tapScale,
     required this.tapOpacity,
     required this.fadeOut,
+    this.isError = false,
+    this.isSuccess = false,
+    this.isLoading = false,
+    this.isValid = false,
   });
 
   factory AnimationState.initial() {
-    return AnimationState(
+    return const AnimationState(
       t: 0.0,
       T: 0.0,
-      beat: TimelineData.calculateBeat(0.0),
+      beat: BeatState(
+        nameLength: 0,
+        email: '',
+        passwordDots: 0,
+        focusedField: -1,
+        isError: false,
+        errorOpacity: 0.0,
+        isValid: false,
+        isLoading: false,
+        isDone: false,
+      ),
       emailShakeX: 0.0,
       phoneOpacity: 0.0,
       buttonPressScale: 1.0,
@@ -56,6 +74,10 @@ class AnimationState {
       tapScale: 0.6,
       tapOpacity: 0.0,
       fadeOut: 1.0,
+      isError: false,
+      isSuccess: false,
+      isLoading: false,
+      isValid: false,
     );
   }
 }

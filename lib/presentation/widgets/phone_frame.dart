@@ -11,8 +11,9 @@ import 'package:oglet/presentation/widgets/tap_indicator.dart';
 
 class PhoneFrame extends StatelessWidget {
   final OgletAnimationEngine engine;
+  final Widget? form;
 
-  const PhoneFrame({super.key, required this.engine});
+  const PhoneFrame({super.key, required this.engine, this.form});
 
   @override
   Widget build(BuildContext context) {
@@ -69,78 +70,92 @@ class PhoneFrame extends StatelessWidget {
               borderRadius: BorderRadius.circular(
                 DesignTokens.phoneRadius,
               ), // 60.0
-              child: Container(
-                width: DesignTokens.phoneWidth, // 400.0
-                height: DesignTokens.phoneHeight, // 860.0
-                color: DesignTokens.screen, // #EFEBE4
-                child: Stack(
-                  children: [
-                    // Layer 1: Sparkles & Back characters (Cookie, Bean, Sun)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                          painter: StarsPainter(engine: engine),
-                        ),
-                      ),
-                    ),
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                          painter: CharacterPainter(
-                            engine: engine,
-                            layer: CharacterLayer.back,
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (event) {
+                  engine.triggerTap(event.localPosition);
+                },
+                child: Container(
+                  width: DesignTokens.phoneWidth, // 400.0
+                  height: DesignTokens.phoneHeight, // 860.0
+                  color: DesignTokens.screen, // #EFEBE4
+                  child: Stack(
+                    children: [
+                      // Layer 1: Sparkles & Back characters (Cookie, Bean, Sun)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: IgnorePointer(
+                            child: CustomPaint(
+                              painter: StarsPainter(engine: engine),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-
-                    // Layer 2: Status bar (completely static, cached)
-                    const Positioned(
-                      top: 0.0,
-                      left: 0.0,
-                      right: 0.0,
-                      height: 54.0,
-                      child: RepaintBoundary(child: StatusBar()),
-                    ),
-
-                    // Layer 3: Sign-up form (Title, fields, meter, button, footer)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: ListenableBuilder(
-                          listenable: engine,
-                          builder: (context, _) {
-                            return SignupForm(state: engine.state);
-                          },
-                        ),
-                      ),
-                    ),
-
-                    // Layer 4: Front characters (Wobble, Pebble)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                          painter: CharacterPainter(
-                            engine: engine,
-                            layer: CharacterLayer.front,
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: IgnorePointer(
+                            child: CustomPaint(
+                              painter: CharacterPainter(
+                                engine: engine,
+                                layer: CharacterLayer.back,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
-                    // Layer 5: Tap indicator ring
-                    ListenableBuilder(
-                      listenable: engine,
-                      builder: (context, _) {
-                        final state = engine.state;
-                        return TapIndicator(
-                          active: state.tapActive,
-                          position: state.tapPosition,
-                          scale: state.tapScale,
-                          opacity: state.tapOpacity,
-                        );
-                      },
-                    ),
-                  ],
+                      // Layer 2: Status bar (completely static, cached)
+                      const Positioned(
+                        top: 0.0,
+                        left: 0.0,
+                        right: 0.0,
+                        height: 54.0,
+                        child: RepaintBoundary(child: StatusBar()),
+                      ),
+
+                      // Layer 3: Sign-up / Login form (Title, fields, meter, button, footer)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child:
+                              form ??
+                              ListenableBuilder(
+                                listenable: engine,
+                                builder: (context, _) {
+                                  return SignupForm(state: engine.state);
+                                },
+                              ),
+                        ),
+                      ),
+
+                      // Layer 4: Front characters (Wobble, Pebble)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: IgnorePointer(
+                            child: CustomPaint(
+                              painter: CharacterPainter(
+                                engine: engine,
+                                layer: CharacterLayer.front,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Layer 5: Tap indicator ring
+                      ListenableBuilder(
+                        listenable: engine,
+                        builder: (context, _) {
+                          final state = engine.state;
+                          return TapIndicator(
+                            active: state.tapActive,
+                            position: state.tapPosition,
+                            scale: state.tapScale,
+                            opacity: state.tapOpacity,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

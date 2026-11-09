@@ -1,54 +1,44 @@
+import 'dart:async';
 import 'package:flutter/widgets.dart';
-
 import 'package:oglet/data/oglet_content.dart';
-import 'package:oglet/engine/oglet_animation_engine.dart';
-import 'package:oglet/presentation/widgets/design_stage.dart';
-import 'package:oglet/presentation/widgets/phone_frame.dart';
+import 'package:oglet/models/login_credentials.dart';
+import 'package:oglet/presentation/screens/oglet_login_screen.dart';
 
-class OgletScreen extends StatefulWidget {
-  const OgletScreen({super.key});
+/// Default screen presenting the interactive [OgletLoginScreen] with demonstration
+/// authentication callbacks.
+class OgletScreen extends StatelessWidget {
+  final bool showNameField;
 
-  @override
-  State<OgletScreen> createState() => _OgletScreenState();
-}
-
-class _OgletScreenState extends State<OgletScreen>
-    with SingleTickerProviderStateMixin {
-  OgletAnimationEngine? _engine;
-  bool? _lastReducedMotion;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Granular aspect-specific subscription to avoid unnecessary rebuilds
-    final bool reducedMotion = MediaQuery.disableAnimationsOf(context);
-
-    if (_engine == null || _lastReducedMotion != reducedMotion) {
-      _engine?.dispose();
-      _lastReducedMotion = reducedMotion;
-      _engine = OgletAnimationEngine(
-        vsync: this,
-        prefersReducedMotion: reducedMotion,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _engine?.dispose();
-    super.dispose();
-  }
+  const OgletScreen({super.key, this.showNameField = true});
 
   @override
   Widget build(BuildContext context) {
-    if (_engine == null) {
-      return const SizedBox.shrink();
-    }
+    return OgletLoginScreen(
+      showNameField: showNameField,
+      title: OgletContent.title,
+      onLogin: (credentials) async {
+        // DEMONSTRATION ONLY: Mock authentication simulating network roundtrip
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
-    return Semantics(
-      label: OgletContent.description,
-      container: true,
-      child: DesignStage(child: PhoneFrame(engine: _engine!)),
+        // Accept any email containing "error" as a failure trigger for testing/demo
+        if (credentials.identifier.contains('error')) {
+          return const AuthResult.failure(
+            'Invalid credentials. Please try again.',
+          );
+        }
+
+        // Accept any valid email/password
+        return const AuthResult.success();
+      },
+      onForgotPassword: () {
+        // Host application navigates to forgot password screen
+      },
+      onCreateAccount: () {
+        // Host application navigates to registration screen
+      },
+      onAuthenticated: (credentials) {
+        // Host application proceeds after celebration
+      },
     );
   }
 }

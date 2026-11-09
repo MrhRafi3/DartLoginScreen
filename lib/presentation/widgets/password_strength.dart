@@ -4,11 +4,13 @@ import 'package:oglet/core/constants/design_tokens.dart';
 class PasswordStrengthMeter extends StatelessWidget {
   final int passwordDots;
   final int maxDots;
+  final double? top;
 
   const PasswordStrengthMeter({
     super.key,
     required this.passwordDots,
     this.maxDots = 9,
+    this.top,
   });
 
   @override
@@ -21,7 +23,7 @@ class PasswordStrengthMeter extends StatelessWidget {
     return Positioned(
       left: DesignTokens.meterInset,
       right: DesignTokens.meterInset,
-      top: DesignTokens.meterTop,
+      top: top ?? DesignTokens.meterTop,
       height: DesignTokens.meterHeight,
       child: Container(
         decoration: BoxDecoration(

@@ -4,10 +4,11 @@ import 'package:flutter/widgets.dart';
 import 'package:oglet/core/constants/design_tokens.dart';
 import 'package:oglet/data/oglet_content.dart';
 import 'package:oglet/engine/animation_state.dart';
-import 'package:oglet/presentation/widgets/form_field.dart';
 import 'package:oglet/presentation/widgets/password_strength.dart';
 import 'package:oglet/presentation/widgets/signup_button.dart';
 
+/// Legacy display widget maintained for visual compatibility.
+/// For production interactive authentication, use [OgletLoginForm] or [OgletLoginScreen].
 class SignupForm extends StatelessWidget {
   final AnimationState state;
 
@@ -15,9 +16,6 @@ class SignupForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Caret blink cycle: 0.5s on, 0.5s off
-    final bool caretBlink = (state.T * 2.0).floor() % 2 == 0;
-
     final String titleText = state.isTitleDone
         ? OgletContent.titleDone
         : OgletContent.title;
@@ -79,62 +77,19 @@ class SignupForm extends StatelessWidget {
           ),
         ),
 
-        // Name Field
-        OgletFormField(
-          label: OgletContent.nameLabel,
-          labelTop: DesignTokens.nameLabelTop,
-          inputTop: DesignTokens.nameTop,
-          placeholder: OgletContent.namePlaceholder,
-          value: state.beat.displayedName,
-          isFocused: state.beat.focusedField == 0,
-          caretVisible: caretBlink,
-        ),
-
-        // Email Field
-        OgletFormField(
-          label: OgletContent.emailLabel,
-          labelTop: DesignTokens.emailLabelTop,
-          inputTop: DesignTokens.emailTop,
-          placeholder: OgletContent.emailPlaceholder,
-          value: state.beat.email,
-          isFocused: state.beat.focusedField == 1,
-          isError: state.beat.isError,
-          shakeX: state.emailShakeX,
-          caretVisible: caretBlink,
-          showCheck: true,
-          checkOpacity: state.beat.isValid ? 1.0 : 0.0,
-          checkScale: state.beat.isValid ? 1.0 : 0.5,
-        ),
-
-        // Email Error Hint
-        Positioned(
-          left: DesignTokens.errorLeft,
-          top: DesignTokens.errorTop,
-          child: Opacity(
-            opacity: state.beat.errorOpacity.clamp(0.0, 1.0),
-            child: const Text(
-              OgletContent.error,
-              style: TextStyle(
-                fontFamily: DesignTokens.fontFamily,
-                fontSize: DesignTokens.errorSize,
-                fontWeight: DesignTokens.errorWeight,
-                color: DesignTokens.error,
-                height: 1.0,
-              ),
+        // Static visual placeholders for legacy preview
+        const Positioned(
+          left: DesignTokens.labelLeft,
+          top: DesignTokens.emailLabelTop,
+          child: Text(
+            OgletContent.emailLabel,
+            style: TextStyle(
+              fontFamily: DesignTokens.fontFamily,
+              fontSize: DesignTokens.labelSize,
+              fontWeight: DesignTokens.labelWeight,
+              color: DesignTokens.muted,
             ),
           ),
-        ),
-
-        // Password Field
-        OgletFormField(
-          label: OgletContent.passwordLabel,
-          labelTop: DesignTokens.passwordLabelTop,
-          inputTop: DesignTokens.passwordTop,
-          placeholder: OgletContent.passwordPlaceholder,
-          value: OgletContent.passwordDot * state.beat.passwordDots,
-          isPassword: true,
-          isFocused: state.beat.focusedField == 2,
-          caretVisible: caretBlink,
         ),
 
         // Password Strength Meter
@@ -145,8 +100,8 @@ class SignupForm extends StatelessWidget {
 
         // Main Signup Button
         SignupButton(
-          isLoading: state.beat.isLoading,
-          isDone: state.beat.isDone,
+          isLoading: state.isLoading,
+          isDone: state.isSuccess,
           pressScale: state.buttonPressScale,
           spinnerAngle: state.spinnerAngle,
         ),

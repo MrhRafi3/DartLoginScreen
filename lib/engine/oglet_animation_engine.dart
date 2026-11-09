@@ -8,7 +8,6 @@ import 'package:oglet/core/geometry/organic_shapes.dart';
 import 'package:oglet/core/math/math_utils.dart';
 import 'package:oglet/core/math/spring.dart';
 import 'package:oglet/data/crew_data.dart';
-import 'package:oglet/data/oglet_content.dart';
 import 'package:oglet/data/timeline_data.dart';
 import 'package:oglet/engine/animation_state.dart';
 import 'package:oglet/engine/character_rig.dart';
@@ -25,9 +24,9 @@ class OgletAnimationEngine with ChangeNotifier {
   Ticker? _ticker;
   double? _startTime;
   double? _lastTime;
-  double? _prevLoopTime;
 
   Offset _look = const Offset(200.0, 420.0);
+  Offset _targetLook = const Offset(200.0, 420.0);
 
   final Spring _worry = Spring(
     k: AnimationConstants.springWorry.$1,
@@ -51,6 +50,22 @@ class OgletAnimationEngine with ChangeNotifier {
   bool _isDisposed = false;
   final bool prefersReducedMotion;
 
+  // Reactive state flags
+  bool _isError = false;
+  bool _isSuccess = false;
+  bool _isLoading = false;
+  bool _isValid = false;
+  BeatState _cachedBeat = AnimationState.initial().beat;
+
+  double? _errorStartTime;
+  double? _successStartTime;
+  double? _buttonPressTime;
+  double? _tapStartTime;
+  Offset _tapPosition = Offset.zero;
+
+  // Staggered hops tracking for celebration
+  int _hopCount = 0;
+
   final TextPainter _textPainter = TextPainter(
     textDirection: TextDirection.ltr,
   );
@@ -69,12 +84,8 @@ class OgletAnimationEngine with ChangeNotifier {
         .toList(growable: false);
 
     if (prefersReducedMotion) {
-      // Simulate up to AnimationConstants.stillAt (12s) in 1/60s steps
-      final int steps = (AnimationConstants.stillAt * 60).round();
-      const double stepDt = 1.0 / 60.0;
-      for (int k = 0; k <= steps; k++) {
-        _tickSimulation(k * stepDt);
-      }
+      // Settle rigs to resting steady state immediately
+      _tickSimulation(1.5, isDirectInit: true);
     } else if (vsync != null) {
       _ticker = vsync.createTicker(_handleTick);
       _ticker!.start();
@@ -88,6 +99,155 @@ class OgletAnimationEngine with ChangeNotifier {
     _ticker!.start();
   }
 
+  void lookAt(Offset target) {
+    _targetLook = target;
+  }
+
+  void lookAtField(int fieldIndex, [double textOffset = 0.0]) {
+    const double fieldLeft = DesignTokens.fieldInset;
+    const double fieldPad = DesignTokens.fieldPaddingHorizontal;
+    final double textStartX = fieldLeft + fieldPad + textOffset;
+
+    switch (fieldIndex) {
+      case 0: // Name (in 3-field) or Identifier (in 2-field)
+        _targetLook = Offset(textStartX.clamp(46.0, 350.0), 388.0);
+        break;
+      case 1: // Email (in 3-field) or Password (in 2-field)
+        _targetLook = Offset(textStartX.clamp(46.0, 350.0), 480.0);
+        break;
+      case 2: // Password (in 3-field mode)
+        _targetLook = Offset(textStartX.clamp(46.0, 350.0), 560.0);
+        break;
+      default:
+        _targetLook = const Offset(200.0, 420.0);
+    }
+  }
+
+  void lookAtButton() {
+    _targetLook = const Offset(200.0, 677.0);
+  }
+
+  void lookAtRest() {
+    _targetLook = const Offset(200.0, 420.0);
+  }
+
+  void triggerError() {
+    _isError = true;
+    _isSuccess = false;
+    _errorStartTime = _state.T;
+
+    // Flinch characters with surprise
+    for (int ci = 0; ci < rigs.length; ci++) {
+      rigs[ci].shake.v += (ci % 2 != 0 ? -1.0 : 1.0) * 260.0;
+      rigs[ci].sq.v -= 7.0;
+    }
+    if (prefersReducedMotion) {
+      _worry.x = 1.0;
+      _worry.v = 0.0;
+    }
+    _tickSimulation(
+      _state.T + (prefersReducedMotion ? 1.0 : 0.0),
+      isDirectInit: prefersReducedMotion,
+    );
+    notifyListeners();
+  }
+
+  void clearError() {
+    if (_isError) {
+      _isError = false;
+      _tickSimulation(_state.T);
+      notifyListeners();
+    }
+  }
+
+  void triggerSuccess() {
+    _isSuccess = true;
+    _isError = false;
+    _successStartTime = _state.T;
+    _hopCount = 0;
+    _targetLook = const Offset(200.0, 300.0);
+
+    // Initial hop
+    for (int ci = 0; ci < rigs.length; ci++) {
+      rigs[ci].hop.v -= 420.0;
+      rigs[ci].sq.v -= 10.0;
+    }
+    if (prefersReducedMotion) {
+      _joy.x = 1.0;
+      _joy.v = 0.0;
+    }
+    _tickSimulation(
+      _state.T + (prefersReducedMotion ? 1.0 : 0.0),
+      isDirectInit: prefersReducedMotion,
+    );
+    notifyListeners();
+  }
+
+  void triggerValid() {
+    _isValid = true;
+    for (final rig in rigs) {
+      rig.sq.v += 4.0;
+    }
+    _tickSimulation(_state.T);
+    notifyListeners();
+  }
+
+  void setValid(bool valid) {
+    if (_isValid != valid) {
+      _isValid = valid;
+      if (valid) {
+        for (final rig in rigs) {
+          rig.sq.v += 4.0;
+        }
+      }
+      _tickSimulation(_state.T);
+      notifyListeners();
+    }
+  }
+
+  void setLoading(bool loading) {
+    if (_isLoading != loading) {
+      _isLoading = loading;
+      if (loading) {
+        _targetLook = const Offset(200.0, 677.0);
+      }
+      _tickSimulation(_state.T);
+      notifyListeners();
+    }
+  }
+
+  void triggerButtonPress() {
+    _buttonPressTime = _state.T;
+    _tickSimulation(_state.T);
+    notifyListeners();
+  }
+
+  void triggerTap(Offset position) {
+    _tapStartTime = _state.T;
+    _tapPosition = position;
+    _tickSimulation(_state.T);
+    notifyListeners();
+  }
+
+  void reset() {
+    _isError = false;
+    _isSuccess = false;
+    _isLoading = false;
+    _isValid = false;
+    _errorStartTime = null;
+    _successStartTime = null;
+    _worry.reset();
+    _joy.reset();
+    _relief.reset();
+    _targetLook = const Offset(200.0, 420.0);
+    _look = const Offset(200.0, 420.0);
+    for (final rig in rigs) {
+      rig.reset();
+    }
+    _tickSimulation(_state.T);
+    notifyListeners();
+  }
+
   void _handleTick(Duration elapsed) {
     if (_isDisposed) return;
     final double elapsedSeconds = elapsed.inMicroseconds / 1000000.0;
@@ -95,7 +255,7 @@ class OgletAnimationEngine with ChangeNotifier {
     notifyListeners();
   }
 
-  void _tickSimulation(double nowSeconds) {
+  void _tickSimulation(double nowSeconds, {bool isDirectInit = false}) {
     final double T = nowSeconds;
     _startTime ??= T;
 
@@ -104,137 +264,90 @@ class OgletAnimationEngine with ChangeNotifier {
         : math.min(0.05, T - _lastTime!);
     _lastTime = T;
 
-    final double t = (T - _startTime!) % AnimationConstants.loopDuration;
-    final BeatState beat = TimelineData.calculateBeat(t);
-
-    // Email field shake: 2.5 swings, 8px, dying out
-    final double uShake = MathUtils.clamp(
-      (t - AnimationConstants.atError) / 0.55,
-    );
-    final double emailShakeX =
-        math.sin(uShake * math.pi * 5.0) * 8.0 * (1.0 - uShake);
-
-    // Button press dip
-    final double pr = math.max(
-      0.0,
-      1.0 -
-          math.min(
-                (t - AnimationConstants.presses[0]).abs(),
-                (t - AnimationConstants.presses[1]).abs(),
-              ) /
-              0.12,
-    );
-    final double buttonPressScale = 1.0 - 0.05 * pr;
-
-    // Spinner angle
-    final double spinnerAngle = (T * 540.0) * (math.pi / 180.0);
-
-    // Title blur and subtitle text states
-    final double tw = math.max(
-      0.0,
-      1.0 - (t - AnimationConstants.atTitle).abs() / 0.25,
-    );
-    final double titleBlur = tw > 0.02 ? tw * 8.0 : 0.0;
-    final bool isTitleDone =
-        t > AnimationConstants.atTitle && t < AnimationConstants.atDoneEnd;
-    final bool isSubtitleDone = isTitleDone;
-    final bool isSubtitleError =
-        t > AnimationConstants.atError && t < AnimationConstants.atErrorEnd;
-
-    // Target look coordinate
-    Offset tg = const Offset(200.0, 520.0);
-    for (final tap in TimelineData.taps) {
-      if (t >= tap.time) {
-        tg = Offset(tap.x, tap.y);
+    // Field shake calculation when an error is triggered
+    double emailShakeX = 0.0;
+    if (_errorStartTime != null) {
+      final double elapsedSinceError = T - _errorStartTime!;
+      if (elapsedSinceError >= 0.0 && elapsedSinceError < 0.55) {
+        final double uShake = MathUtils.clamp(elapsedSinceError / 0.55);
+        emailShakeX = math.sin(uShake * math.pi * 5.0) * 8.0 * (1.0 - uShake);
       }
     }
-    if (beat.focusedField >= 0) {
-      tg = _caretAt(beat.focusedField, beat);
-    }
-    if (beat.isDone) {
-      tg = const Offset(200.0, 300.0);
+
+    // Button press dip scale
+    double buttonPressScale = 1.0;
+    if (_buttonPressTime != null) {
+      final double elapsedSincePress = (T - _buttonPressTime!).abs();
+      if (elapsedSincePress < 0.12) {
+        final double pr = 1.0 - elapsedSincePress / 0.12;
+        buttonPressScale = 1.0 - 0.05 * pr;
+      }
     }
 
+    // Rotating spinner angle
+    final double spinnerAngle = (T * 540.0) * (math.pi / 180.0);
+
+    // Staggered celebration hops
+    if (_isSuccess && _successStartTime != null) {
+      final double sinceSuccess = T - _successStartTime!;
+      if (_hopCount == 0 && sinceSuccess >= 0.65) {
+        _hopCount = 1;
+        for (int ci = 0; ci < rigs.length; ci++) {
+          rigs[ci].hop.v -= 420.0;
+          rigs[ci].sq.v -= 10.0;
+        }
+      } else if (_hopCount == 1 && sinceSuccess >= 1.30) {
+        _hopCount = 2;
+        for (int ci = 0; ci < rigs.length; ci++) {
+          rigs[ci].hop.v -= 420.0;
+          rigs[ci].sq.v -= 10.0;
+        }
+      }
+    }
+
+    // Smooth look target interpolation
     _look = Offset(
-      _look.dx + (tg.dx - _look.dx) * math.min(1.0, dt * 6.0),
-      _look.dy + (tg.dy - _look.dy) * math.min(1.0, dt * 6.0),
+      _look.dx + (_targetLook.dx - _look.dx) * math.min(1.0, dt * 6.0),
+      _look.dy + (_targetLook.dy - _look.dy) * math.min(1.0, dt * 6.0),
     );
 
-    // Tap indicator
+    // Tap indicator ring calculation
     bool tapActive = false;
     Offset tapPos = Offset.zero;
     double tapOpacity = 0.0;
     double tapScale = 0.6;
 
-    for (final tap in TimelineData.taps) {
-      final double uTap = (t - tap.time) / 0.45;
-      if (uTap > 0.0 && uTap < 1.0) {
-        tapPos = Offset(tap.x - 22.0, tap.y - 22.0);
+    if (_tapStartTime != null) {
+      final double uTap = (T - _tapStartTime!) / 0.45;
+      if (uTap >= 0.0 && uTap < 1.0) {
+        tapPos = Offset(_tapPosition.dx - 22.0, _tapPosition.dy - 22.0);
         tapOpacity = math.sin(math.pi * uTap);
         tapScale = 0.6 + 0.6 * uTap;
         tapActive = true;
-        break;
       }
     }
 
-    // Step shared crew moods
-    final double fadeOut =
-        1.0 -
-        MathUtils.seg(
-          t,
-          AnimationConstants.atFadeOut,
-          AnimationConstants.loopDuration,
-        );
-
-    final double pt = _prevLoopTime ?? t;
-    _prevLoopTime = t;
-
-    // Comprehensive reset on timeline loop wrap
-    if (t < pt) {
-      _worry.reset();
-      _joy.reset();
-      _relief.reset();
-      _look = const Offset(200.0, 420.0);
-      for (final rig in rigs) {
-        rig.reset();
-      }
-    }
-
-    _worry.step(beat.isError ? 1.0 : 0.0, dt);
-    _joy.step(beat.isDone ? 1.0 : 0.0, dt);
-    _relief.step((beat.isValid && !beat.isDone) ? 1.0 : 0.0, dt);
+    // Step shared moods
+    _worry.step(_isError ? 1.0 : 0.0, dt);
+    _joy.step(_isSuccess ? 1.0 : 0.0, dt);
+    _relief.step((_isValid && !_isSuccess) ? 1.0 : 0.0, dt);
 
     final double er = MathUtils.clamp(_worry.x, 0.0, 1.2);
     final double jy = MathUtils.clamp(_joy.x, 0.0, 1.2);
     final double okk = MathUtils.clamp(_relief.x, 0.0, 1.2);
 
-    bool crossed(double x) => pt < x && t >= x;
-
     for (int ci = 0; ci < rigs.length; ci++) {
       final CharacterRig c = rigs[ci];
       final MemberDefinition m = c.member;
-
-      // Flinch / head shake / squash kicks
-      if (crossed(AnimationConstants.atError + ci * 0.04)) {
-        c.shake.v += (ci % 2 != 0 ? -1.0 : 1.0) * 260.0;
-        c.sq.v -= 7.0;
-      }
-      if (crossed(AnimationConstants.atFixed + ci * 0.05)) {
-        c.sq.v += 4.0;
-      }
-      for (final double h in AnimationConstants.hops) {
-        if (crossed(h + ci * 0.07)) {
-          c.hop.v -= 420.0;
-          c.sq.v -= 10.0;
-        }
-      }
 
       c.hop.step(0.0, dt);
       c.shake.step(0.0, dt);
       c.sq.step(0.0, dt);
 
-      // Pop in with overshoot
-      final double pop = MathUtils.clamp((t - m.delay) / 0.6);
+      // Pop in with overshoot (or 1.0 immediately if reduced motion)
+      final double pop = isDirectInit || prefersReducedMotion
+          ? 1.0
+          : MathUtils.clamp((T - m.delay) / 0.6);
       final double ps = pop < 1.0
           ? MathUtils.eio(pop) * (1.0 + math.sin(pop * math.pi) * 0.16)
           : 1.0;
@@ -249,13 +362,9 @@ class OgletAnimationEngine with ChangeNotifier {
       final double stretch =
           MathUtils.clamp(-vy / 1800.0, -0.12, 0.14) + c.sq.x * 0.012;
       final double sx =
-          ps *
-          fadeOut *
-          (1.0 - stretch * 0.6) *
-          (1.0 + math.sin(T * 2.0 + ci) * 0.012);
+          ps * (1.0 - stretch * 0.6) * (1.0 + math.sin(T * 2.0 + ci) * 0.012);
       final double sy =
           ps *
-          fadeOut *
           (1.0 + stretch) *
           (1.0 - er * 0.04) *
           (1.0 + math.sin(T * 2.0 + ci + 1.0) * 0.012);
@@ -385,90 +494,57 @@ class OgletAnimationEngine with ChangeNotifier {
       final star = stars[i];
       final double twStar = 0.75 + 0.25 * math.sin(T * 3.0 + i * 1.7);
       final double b = 1.0 + jy * (0.6 + 0.4 * math.sin(T * 9.0 + i));
-      star.scale = twStar * b * fadeOut;
+      star.scale = twStar * b;
       star.rotation = (T * 20.0 + i * 30.0) * (math.pi / 180.0);
     }
 
-    // Phone opacity
-    final double phoneOpacity =
-        MathUtils.seg(t, 0.0, 0.4) *
-        (1.0 - MathUtils.seg(t, 17.5, AnimationConstants.loopDuration));
+    // Phone opacity (smooth fade in over first 0.4s or 1.0 immediately)
+    final double phoneOpacity = isDirectInit || prefersReducedMotion
+        ? 1.0
+        : MathUtils.clamp(T / 0.4);
+
+    if (_cachedBeat.isError != _isError ||
+        _cachedBeat.isValid != _isValid ||
+        _cachedBeat.isLoading != _isLoading ||
+        _cachedBeat.isDone != _isSuccess) {
+      _cachedBeat = BeatState(
+        nameLength: 0,
+        email: '',
+        passwordDots: 0,
+        focusedField: -1,
+        isError: _isError,
+        errorOpacity: _isError ? 1.0 : 0.0,
+        isValid: _isValid,
+        isLoading: _isLoading,
+        isDone: _isSuccess,
+      );
+    }
 
     _state = AnimationState(
-      t: t,
+      t: T,
       T: T,
-      beat: beat,
+      beat: _cachedBeat,
       emailShakeX: emailShakeX,
       phoneOpacity: phoneOpacity,
       buttonPressScale: buttonPressScale,
       spinnerAngle: spinnerAngle,
-      titleBlur: titleBlur,
-      isTitleDone: isTitleDone,
-      isSubtitleDone: isSubtitleDone,
-      isSubtitleError: isSubtitleError,
+      titleBlur: 0.0,
+      isTitleDone: _isSuccess,
+      isSubtitleDone: _isSuccess,
+      isSubtitleError: _isError,
       tapActive: tapActive,
       tapPosition: tapPos,
       tapScale: tapScale,
       tapOpacity: tapOpacity,
-      fadeOut: fadeOut,
+      fadeOut: 1.0,
+      isError: _isError,
+      isSuccess: _isSuccess,
+      isLoading: _isLoading,
+      isValid: _isValid,
     );
   }
 
-  Offset _caretAt(int fieldIndex, BeatState beat) {
-    const double fieldLeft = DesignTokens.fieldInset;
-    const double fieldPad = DesignTokens.fieldPaddingHorizontal;
-    const double textStartX = fieldLeft + fieldPad;
-
-    switch (fieldIndex) {
-      case 0:
-        // Name field
-        final String text = beat.displayedName;
-        final double width = _measureCachedText(
-          'name:$text',
-          text,
-          const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: DesignTokens.fieldSize,
-            fontWeight: DesignTokens.fieldWeight,
-          ),
-        );
-        return Offset(textStartX + width + 1.0, 400.0);
-
-      case 1:
-        // Email field
-        final String text = beat.email;
-        final double width = _measureCachedText(
-          'email:$text',
-          text,
-          const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: DesignTokens.fieldSize,
-            fontWeight: DesignTokens.fieldWeight,
-          ),
-        );
-        return Offset(textStartX + width + 1.0, 486.0);
-
-      case 2:
-        // Password field
-        final String dots = OgletContent.passwordDot * beat.passwordDots;
-        final double width = _measureCachedText(
-          'pass:${beat.passwordDots}',
-          dots,
-          const TextStyle(
-            fontFamily: DesignTokens.fontFamily,
-            fontSize: DesignTokens.fieldSize,
-            fontWeight: DesignTokens.fieldWeight,
-            letterSpacing: DesignTokens.dotsTracking,
-          ),
-        );
-        return Offset(textStartX + width + 1.0, 588.0);
-
-      default:
-        return const Offset(200.0, 420.0);
-    }
-  }
-
-  double _measureCachedText(String key, String text, TextStyle style) {
+  double measureCachedText(String key, String text, TextStyle style) {
     if (text.isEmpty) return 0.0;
     return _textWidthCache.putIfAbsent(key, () {
       _textPainter.text = TextSpan(text: text, style: style);

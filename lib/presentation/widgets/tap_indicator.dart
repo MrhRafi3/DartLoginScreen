@@ -26,15 +26,17 @@ class TapIndicator extends StatelessWidget {
       top: position.dy,
       width: DesignTokens.tapSize,
       height: DesignTokens.tapSize,
-      child: Opacity(
-        opacity: opacity.clamp(0.0, 1.0),
-        child: Transform.scale(
-          scale: scale,
-          child: Container(
-            decoration: BoxDecoration(
-              color: DesignTokens.tapFill,
-              shape: BoxShape.circle,
-              border: Border.all(color: DesignTokens.tapEdge, width: 2.0),
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: opacity.clamp(0.0, 1.0),
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              decoration: BoxDecoration(
+                color: DesignTokens.tapFill,
+                shape: BoxShape.circle,
+                border: Border.all(color: DesignTokens.tapEdge, width: 2.0),
+              ),
             ),
           ),
         ),
