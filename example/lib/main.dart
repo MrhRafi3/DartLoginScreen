@@ -18,14 +18,14 @@ class RafiLoginExampleApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Outfit',
-        scaffoldBackgroundColor: RafiDesignTokens.paper,
+        scaffoldBackgroundColor: RafiDesignTokens.screen,
       ),
       home: const ExampleLoginPage(),
     );
   }
 }
 
-/// Example login page embedding [RafiLoginScreen] as an ordinary Flutter widget.
+/// Example login page embedding [RafiLoginScreen] as a genuine full-screen Flutter view.
 class ExampleLoginPage extends StatefulWidget {
   const ExampleLoginPage({super.key});
 
@@ -34,32 +34,11 @@ class ExampleLoginPage extends StatefulWidget {
 }
 
 class _ExampleLoginPageState extends State<ExampleLoginPage> {
-  bool _showPhoneFrame = true;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: RafiDesignTokens.paper,
-      appBar: AppBar(
-        title: const Text('Rafi Login Template Demo'),
-        backgroundColor: RafiDesignTokens.ink,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            tooltip: _showPhoneFrame
-                ? 'Switch to Embedded Mode'
-                : 'Switch to Phone Mockup Mode',
-            icon: Icon(_showPhoneFrame ? Icons.smartphone : Icons.crop_free),
-            onPressed: () {
-              setState(() {
-                _showPhoneFrame = !_showPhoneFrame;
-              });
-            },
-          ),
-        ],
-      ),
+      backgroundColor: RafiDesignTokens.screen,
       body: RafiLoginScreen(
-        showPhoneFrame: _showPhoneFrame,
         title: 'Welcome back',
         subtitle: "The crew will keep an eye on things",
         loginButtonText: 'Log in',

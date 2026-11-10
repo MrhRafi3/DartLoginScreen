@@ -163,100 +163,75 @@ class RafiLoginForm extends StatelessWidget {
       effectiveSubtitle = RafiLoginContent.subtitleError;
     }
 
-    // Geometry layout: 3-field vs 2-field
-    final double idLabelTop = showNameField
-        ? RafiDesignTokens.emailLabelTop
-        : 366.0;
-    final double idInputTop = showNameField ? RafiDesignTokens.emailTop : 388.0;
-
-    final double passLabelTop = showNameField
-        ? RafiDesignTokens.passwordLabelTop
-        : 478.0;
-    final double passInputTop = showNameField
-        ? RafiDesignTokens.passwordTop
-        : 500.0;
-
-    final double meterTop = showNameField ? RafiDesignTokens.meterTop : 568.0;
-
-    return Stack(
-      clipBehavior: Clip.none,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Optional Logo / Brand Widget
-        if (logo != null)
-          Positioned(
-            left: 0.0,
-            right: 0.0,
-            top: RafiDesignTokens.titleTop - 56.0,
-            child: Center(child: logo!),
-          ),
+        if (logo != null) ...[
+          Center(child: logo!),
+          const SizedBox(height: 16.0),
+        ],
 
         // Title with scoped blur listener
-        Positioned(
-          left: 0.0,
-          right: 0.0,
-          top: RafiDesignTokens.titleTop,
-          child: ListenableBuilder(
-            listenable: engine,
-            builder: (context, _) {
-              Widget titleTextWidget = Text(
-                effectiveTitle,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: RafiDesignTokens.fontFamily,
-                  package: RafiDesignTokens.fontPackage,
-                  fontSize: RafiDesignTokens.titleSize,
-                  fontWeight: RafiDesignTokens.titleWeight,
-                  letterSpacing: RafiDesignTokens.titleTracking,
-                  color: RafiDesignTokens.ink,
-                  height: 1.0,
-                ),
-              );
+        ListenableBuilder(
+          listenable: engine,
+          builder: (context, _) {
+            Widget titleTextWidget = Text(
+              effectiveTitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: RafiDesignTokens.fontFamily,
+                package: RafiDesignTokens.fontPackage,
+                fontSize: RafiDesignTokens.titleSize,
+                fontWeight: RafiDesignTokens.titleWeight,
+                letterSpacing: RafiDesignTokens.titleTracking,
+                color: RafiDesignTokens.ink,
+                height: 1.0,
+              ),
+            );
 
-              final double blur = engine.state.titleBlur;
-              if (blur > 0.02) {
-                titleTextWidget = ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-                  child: titleTextWidget,
-                );
-              }
-              return titleTextWidget;
-            },
-          ),
+            final double blur = engine.state.titleBlur;
+            if (blur > 0.02) {
+              titleTextWidget = ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                child: titleTextWidget,
+              );
+            }
+            return titleTextWidget;
+          },
         ),
+        const SizedBox(height: 8.0),
 
         // Subtitle
-        Positioned(
-          left: RafiDesignTokens.fieldInset,
-          right: RafiDesignTokens.fieldInset,
-          top: RafiDesignTokens.subtitleTop,
-          child: Text(
-            effectiveSubtitle,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: RafiDesignTokens.fontFamily,
-              package: RafiDesignTokens.fontPackage,
-              fontSize: RafiDesignTokens.subtitleSize,
-              fontWeight: RafiDesignTokens.subtitleWeight,
-              color:
-                  (authError != null ||
-                      identifierError != null ||
-                      passwordError != null)
-                  ? RafiDesignTokens.error
-                  : RafiDesignTokens.muted,
-              height: 1.2,
-            ),
+        Text(
+          effectiveSubtitle,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: RafiDesignTokens.fontFamily,
+            package: RafiDesignTokens.fontPackage,
+            fontSize: RafiDesignTokens.subtitleSize,
+            fontWeight: RafiDesignTokens.subtitleWeight,
+            color:
+                (authError != null ||
+                    identifierError != null ||
+                    passwordError != null)
+                ? RafiDesignTokens.error
+                : RafiDesignTokens.muted,
+            height: 1.2,
           ),
         ),
+        const SizedBox(height: 24.0),
 
         // Optional Name Field (3-field mode)
-        if (showNameField && nameController != null && nameFocusNode != null)
+        if (showNameField &&
+            nameController != null &&
+            nameFocusNode != null) ...[
           RafiFormField(
             fieldKey: const Key('name_field'),
             label: RafiLoginContent.nameLabel,
-            labelTop: RafiDesignTokens.nameLabelTop,
-            inputTop: RafiDesignTokens.nameTop,
             placeholder: RafiLoginContent.namePlaceholder,
             controller: nameController!,
             focusNode: nameFocusNode!,
@@ -270,6 +245,8 @@ class RafiLoginForm extends StatelessWidget {
               engine.lookAtField(0, val.length * 8.0);
             },
           ),
+          const SizedBox(height: 16.0),
+        ],
 
         // Primary Identifier Field (Email / Username) with scoped shake listener
         ListenableBuilder(
@@ -278,8 +255,6 @@ class RafiLoginForm extends StatelessWidget {
             return RafiFormField(
               fieldKey: const Key('identifier_field'),
               label: identifierLabel ?? _defaultIdentifierLabel(),
-              labelTop: idLabelTop,
-              inputTop: idInputTop,
               placeholder:
                   identifierPlaceholder ?? _defaultIdentifierPlaceholder(),
               controller: identifierController,
@@ -300,42 +275,36 @@ class RafiLoginForm extends StatelessWidget {
             );
           },
         ),
+        const SizedBox(height: 16.0),
 
-        // Password Label & Forgot Password Link Row
-        if (onForgotPassword != null)
-          Positioned(
-            right: RafiDesignTokens.fieldInset,
-            top: passLabelTop - 12.0,
-            child: GestureDetector(
-              key: const Key('forgot_password_button'),
-              onTap: (!isLoading && !isSuccess) ? onForgotPassword : null,
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4.0,
-                  vertical: 12.0,
-                ),
-                child: const Text(
-                  'Forgot password?',
-                  style: TextStyle(
-                    fontFamily: RafiDesignTokens.fontFamily,
-                    package: RafiDesignTokens.fontPackage,
-                    fontSize: RafiDesignTokens.labelSize,
-                    fontWeight: RafiDesignTokens.labelWeight,
-                    color: RafiDesignTokens.muted,
-                    height: 1.0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // Password Field
+        // Password Field with inline Forgot Password action
         RafiFormField(
           fieldKey: const Key('password_field'),
           label: passwordLabel ?? RafiLoginContent.passwordLabel,
-          labelTop: passLabelTop,
-          inputTop: passInputTop,
+          trailingAction: onForgotPassword != null
+              ? GestureDetector(
+                  key: const Key('forgot_password_button'),
+                  onTap: (!isLoading && !isSuccess) ? onForgotPassword : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4.0,
+                      vertical: 2.0,
+                    ),
+                    child: const Text(
+                      'Forgot password?',
+                      style: TextStyle(
+                        fontFamily: RafiDesignTokens.fontFamily,
+                        package: RafiDesignTokens.fontPackage,
+                        fontSize: RafiDesignTokens.labelSize,
+                        fontWeight: RafiDesignTokens.labelWeight,
+                        color: RafiDesignTokens.muted,
+                        height: 1.0,
+                      ),
+                    ),
+                  ),
+                )
+              : null,
           placeholder:
               passwordPlaceholder ?? RafiLoginContent.passwordPlaceholder,
           controller: passwordController,
@@ -355,17 +324,20 @@ class RafiLoginForm extends StatelessWidget {
         ),
 
         // Optional Password Strength Meter reactively listening to password keystrokes
-        if (showPasswordStrength)
+        if (showPasswordStrength) ...[
+          const SizedBox(height: 10.0),
           ListenableBuilder(
             listenable: passwordController,
             builder: (context, _) {
               return PasswordStrengthMeter(
-                top: meterTop,
                 passwordDots: passwordController.text.length,
                 maxDots: RafiLoginContent.passwordLength,
               );
             },
           ),
+        ],
+
+        const SizedBox(height: 22.0),
 
         // Main Action Button (Log in / Create account) with scoped press & spinner listener
         ListenableBuilder(
@@ -390,42 +362,38 @@ class RafiLoginForm extends StatelessWidget {
             );
           },
         ),
+        const SizedBox(height: 18.0),
 
         // Footer (e.g. "Don't have an account? Sign up" / "Already a member? Log in")
-        Positioned(
-          left: 0.0,
-          right: 0.0,
-          top: RafiDesignTokens.memberTop,
-          child: Center(
-            child: GestureDetector(
-              key: const Key('create_account_button'),
-              onTap: (!isLoading && !isSuccess) ? onCreateAccount : null,
-              behavior: HitTestBehavior.opaque,
-              child: Text.rich(
-                TextSpan(
-                  text: '${footerPromptText ?? RafiLoginContent.member} ',
-                  style: const TextStyle(
-                    fontFamily: RafiDesignTokens.fontFamily,
-                    package: RafiDesignTokens.fontPackage,
-                    fontSize: RafiDesignTokens.memberSize,
-                    fontWeight: RafiDesignTokens.memberWeight,
-                    color: RafiDesignTokens.muted,
-                    height: 1.0,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: footerActionText ?? RafiLoginContent.login,
-                      style: const TextStyle(
-                        fontFamily: RafiDesignTokens.fontFamily,
-                        package: RafiDesignTokens.fontPackage,
-                        fontSize: RafiDesignTokens.memberSize,
-                        fontWeight: RafiDesignTokens.loginWeight,
-                        color: RafiDesignTokens.ink,
-                        height: 1.0,
-                      ),
-                    ),
-                  ],
+        Center(
+          child: GestureDetector(
+            key: const Key('create_account_button'),
+            onTap: (!isLoading && !isSuccess) ? onCreateAccount : null,
+            behavior: HitTestBehavior.opaque,
+            child: Text.rich(
+              TextSpan(
+                text: '${footerPromptText ?? RafiLoginContent.member} ',
+                style: const TextStyle(
+                  fontFamily: RafiDesignTokens.fontFamily,
+                  package: RafiDesignTokens.fontPackage,
+                  fontSize: RafiDesignTokens.memberSize,
+                  fontWeight: RafiDesignTokens.memberWeight,
+                  color: RafiDesignTokens.muted,
+                  height: 1.0,
                 ),
+                children: [
+                  TextSpan(
+                    text: footerActionText ?? RafiLoginContent.login,
+                    style: const TextStyle(
+                      fontFamily: RafiDesignTokens.fontFamily,
+                      package: RafiDesignTokens.fontPackage,
+                      fontSize: RafiDesignTokens.memberSize,
+                      fontWeight: RafiDesignTokens.loginWeight,
+                      color: RafiDesignTokens.ink,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

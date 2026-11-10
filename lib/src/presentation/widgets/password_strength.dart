@@ -20,28 +20,39 @@ class PasswordStrengthMeter extends StatelessWidget {
         ? DesignTokens.weak
         : DesignTokens.strong;
 
-    return Positioned(
-      left: DesignTokens.meterInset,
-      right: DesignTokens.meterInset,
-      top: top ?? DesignTokens.meterTop,
+    final Widget meterContainer = Container(
       height: DesignTokens.meterHeight,
-      child: Container(
-        decoration: BoxDecoration(
-          color: DesignTokens.meterTrack,
-          borderRadius: BorderRadius.circular(DesignTokens.meterRadius),
-        ),
-        alignment: Alignment.centerLeft,
-        child: FractionallySizedBox(
-          widthFactor: fraction,
-          heightFactor: 1.0,
-          child: Container(
-            decoration: BoxDecoration(
-              color: fillColor,
-              borderRadius: BorderRadius.circular(DesignTokens.meterRadius),
-            ),
+      decoration: BoxDecoration(
+        color: DesignTokens.meterTrack,
+        borderRadius: BorderRadius.circular(DesignTokens.meterRadius),
+      ),
+      alignment: Alignment.centerLeft,
+      child: FractionallySizedBox(
+        widthFactor: fraction,
+        heightFactor: 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: fillColor,
+            borderRadius: BorderRadius.circular(DesignTokens.meterRadius),
           ),
         ),
       ),
+    );
+
+    if (top != null) {
+      return Positioned(
+        left: DesignTokens.meterInset,
+        right: DesignTokens.meterInset,
+        top: top,
+        height: DesignTokens.meterHeight,
+        child: meterContainer,
+      );
+    }
+
+    return SizedBox(
+      height: DesignTokens.meterHeight,
+      width: double.infinity,
+      child: meterContainer,
     );
   }
 }

@@ -23,12 +23,24 @@ class StarsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final double w = size.width > 0.0 ? size.width : 400.0;
+    final double dx = (w - 400.0) / 2.0;
+    final double scale = w < 400.0 ? (w / 400.0) : 1.0;
+
     final stars = engine.stars;
     for (int i = 0; i < stars.length; i++) {
       final star = stars[i];
       if (star.scale <= 0.001) continue;
 
       canvas.save();
+      if (dx != 0.0) {
+        canvas.translate(dx, 0.0);
+      }
+      if (scale < 1.0) {
+        canvas.translate(200.0, 160.0);
+        canvas.scale(scale, scale);
+        canvas.translate(-200.0, -160.0);
+      }
       canvas.translate(star.definition.x, star.definition.y);
       canvas.rotate(star.rotation);
       canvas.scale(star.scale, star.scale);

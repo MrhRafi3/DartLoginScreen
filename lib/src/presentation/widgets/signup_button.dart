@@ -13,6 +13,7 @@ class SignupButton extends StatelessWidget {
   final double pressScale;
   final double spinnerAngle;
   final VoidCallback? onTap;
+  final double? top;
 
   const SignupButton({
     super.key,
@@ -25,6 +26,7 @@ class SignupButton extends StatelessWidget {
     this.pressScale = 1.0,
     required this.spinnerAngle,
     this.onTap,
+    this.top,
   });
 
   @override
@@ -39,62 +41,73 @@ class SignupButton extends StatelessWidget {
         ? RafiDesignTokens.ok
         : RafiDesignTokens.buttonFill;
 
-    return Positioned(
-      left: RafiDesignTokens.buttonInset,
-      right: RafiDesignTokens.buttonInset,
-      top: RafiDesignTokens.buttonTop,
-      height: RafiDesignTokens.buttonHeight,
-      child: Transform.scale(
-        scale: pressScale,
-        child: Semantics(
-          button: true,
-          enabled: !isLoading && !isDone && enabled,
-          label: textLabel,
-          child: GestureDetector(
-            key: const Key('login_button'),
-            onTap: (!isLoading && !isDone && enabled) ? onTap : null,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.circular(
-                  RafiDesignTokens.buttonRadius,
-                ),
+    final Widget buttonCore = Transform.scale(
+      scale: pressScale,
+      child: Semantics(
+        button: true,
+        enabled: !isLoading && !isDone && enabled,
+        label: textLabel,
+        child: GestureDetector(
+          key: const Key('login_button'),
+          onTap: (!isLoading && !isDone && enabled) ? onTap : null,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            height: RafiDesignTokens.buttonHeight,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(
+                RafiDesignTokens.buttonRadius,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Text(
-                    textLabel,
-                    style: const TextStyle(
-                      fontFamily: RafiDesignTokens.fontFamily,
-                      package: RafiDesignTokens.fontPackage,
-                      fontSize: RafiDesignTokens.buttonSize,
-                      fontWeight: RafiDesignTokens.buttonWeight,
-                      color: RafiDesignTokens.buttonText,
-                      height: 1.0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Text(
+                  textLabel,
+                  style: const TextStyle(
+                    fontFamily: RafiDesignTokens.fontFamily,
+                    package: RafiDesignTokens.fontPackage,
+                    fontSize: RafiDesignTokens.buttonSize,
+                    fontWeight: RafiDesignTokens.buttonWeight,
+                    color: RafiDesignTokens.buttonText,
+                    height: 1.0,
+                  ),
+                ),
+                if (isLoading) ...[
+                  const SizedBox(width: RafiDesignTokens.buttonGap),
+                  Transform.rotate(
+                    angle: spinnerAngle,
+                    child: const CustomPaint(
+                      size: Size(
+                        RafiDesignTokens.spinnerSize,
+                        RafiDesignTokens.spinnerSize,
+                      ),
+                      painter: _SpinnerPainter(),
                     ),
                   ),
-                  if (isLoading) ...[
-                    const SizedBox(width: RafiDesignTokens.buttonGap),
-                    Transform.rotate(
-                      angle: spinnerAngle,
-                      child: const CustomPaint(
-                        size: Size(
-                          RafiDesignTokens.spinnerSize,
-                          RafiDesignTokens.spinnerSize,
-                        ),
-                        painter: _SpinnerPainter(),
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
           ),
         ),
       ),
+    );
+
+    if (top != null) {
+      return Positioned(
+        left: RafiDesignTokens.buttonInset,
+        right: RafiDesignTokens.buttonInset,
+        top: top,
+        height: RafiDesignTokens.buttonHeight,
+        child: buttonCore,
+      );
+    }
+
+    return SizedBox(
+      height: RafiDesignTokens.buttonHeight,
+      width: double.infinity,
+      child: buttonCore,
     );
   }
 }

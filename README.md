@@ -10,10 +10,8 @@ A professional, personal-branded, reusable Flutter UI package featuring interact
 
 - **Five Animated Vector Characters**: Fully custom-drawn with `CustomPainter` and organic Bézier curves (**Cookie**, **Bean**, **Sun**, **Wobble**, and **Pebble**).
 - **Physics-Driven Eye Rigging**: Real-time gaze tracking that follows user typing and focus targets with natural spring mechanics, pupil dilation, and blinking.
+- **Genuine Mobile Full-Screen Layout**: Directly occupies the available application viewport, respects system status bar and navigation insets via `SafeArea`, and scrolls smoothly without RenderFlex overflow when the virtual keyboard opens.
 - **Real User Inputs**: Clean text input fields with keyboard actions, focus nodes, real-time validation, and password visibility toggle.
-- **Embedded & Mockup Modes**:
-  - `showPhoneFrame: true` (default): Renders within an iconic phone mockup stage with dynamic island and status bar—ideal for tablet, desktop, and web showcases.
-  - `showPhoneFrame: false`: Renders as an edge-to-edge responsive canvas with all 5 characters, sparkles, and reactive form elements—ideal for direct embedding into existing mobile application views.
 - **Pluggable & Typed Authentication**: Strongly typed `LoginCredentials` delivered to your async `onLogin` callback returning an `AuthResult`.
 - **Security First**: Automatically masks passwords (`[PROTECTED]`) in `toString()` to prevent credential leakage in logs or crash reporting tools.
 - **Bundled Typography**: Bundles the modern **Outfit** font family directly within the package, ensuring identical visual fidelity on all target platforms.
@@ -118,27 +116,19 @@ class MyApp extends StatelessWidget {
 
 ## Embedding Modes
 
-`RafiLoginScreen` is a standard Flutter widget that can be placed inside any screen layout:
-
-### 1. Presentation Mode (Phone Mockup)
-
-By default (`showPhoneFrame: true`), the login widget renders inside a phone frame on a stage with status bar, dynamic island, and rounded bezel shadows.
+`RafiLoginScreen` is a production-ready Flutter widget that directly occupies the available application viewport (e.g. inside a `Scaffold` or as a `MaterialApp.home` destination).
 
 ```dart
 RafiLoginScreen(
-  showPhoneFrame: true,
-  onLogin: (credentials) async { ... },
-)
-```
-
-### 2. Direct Mobile Embedded Mode
-
-When embedding directly inside a mobile app page (e.g. inside an existing `Scaffold`), set `showPhoneFrame: false`. This removes the outer mockup bezel and status bar while retaining all five reactive characters, background sparkles, and responsive form components:
-
-```dart
-RafiLoginScreen(
-  showPhoneFrame: false,
-  onLogin: (credentials) async { ... },
+  title: 'Welcome back',
+  subtitle: "The crew will keep an eye on things",
+  onLogin: (credentials) async {
+    // Perform authentication
+    return const AuthResult.success();
+  },
+  onAuthenticated: (credentials) {
+    // Navigate into main application
+  },
 )
 ```
 
@@ -217,7 +207,7 @@ RafiLoginScreen(
 | `footerPromptText` | `String?` | `"Don't have an account?"` | Footer question/prompt text. |
 | `footerActionText` | `String?` | `'Sign up'` | Footer clickable link text. |
 | `logo` | `Widget?` | `null` | Optional brand logo or icon widget placed above the title. |
-| `showPhoneFrame` | `bool` | `true` | Whether to render inside the presentation phone mockup (`true`) or direct canvas (`false`). |
+| `showPhoneFrame` | `bool` | `false` | Deprecated compatibility parameter (always renders full-screen mobile interface). |
 | `showPasswordStrength` | `bool` | `false` | Whether to display the animated password strength bar. |
 | `showNameField` | `bool` | `false` | Whether to display an optional Name field above the identifier (3-field mode). |
 | `identifierController` | `TextEditingController?` | Managed | Optional externally owned controller for identifier. |
@@ -234,7 +224,7 @@ A fully runnable example is included in the `example/` folder. It demonstrates:
 - Clean package consumption via `package:rafi_login_template/rafi_login_template.dart`
 - Mock authentication with latency and error handling
 - Navigation to a dashboard using host `Navigator`
-- Toggling between mockup and embedded modes
+- Production-ready full-screen mobile login with keyboard-aware scrolling
 
 To run the example:
 

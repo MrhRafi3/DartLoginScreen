@@ -8,8 +8,6 @@ import 'package:rafi_login_template/src/engine/rafi_animation_engine.dart';
 import 'package:rafi_login_template/src/models/login_credentials.dart';
 import 'package:rafi_login_template/src/painters/character_painter.dart';
 import 'package:rafi_login_template/src/painters/stars_painter.dart';
-import 'package:rafi_login_template/src/presentation/widgets/design_stage.dart';
-import 'package:rafi_login_template/src/presentation/widgets/phone_frame.dart';
 import 'package:rafi_login_template/src/presentation/widgets/rafi_login_form.dart';
 import 'package:rafi_login_template/src/presentation/widgets/tap_indicator.dart';
 
@@ -108,7 +106,11 @@ class RafiLoginScreen extends StatefulWidget {
 
   /// Whether to frame the login screen inside the presentation phone mockup and stage.
   ///
-  /// Set to `false` when embedding directly as a normal page in a real mobile application.
+  /// Deprecated: [RafiLoginScreen] now renders directly as a genuine production-ready
+  /// full-screen mobile interface without a nested phone mockup.
+  @Deprecated(
+    'Phone mockup has been removed in favor of a genuine full-screen mobile layout.',
+  )
   final bool showPhoneFrame;
 
   const RafiLoginScreen({
@@ -141,7 +143,7 @@ class RafiLoginScreen extends StatefulWidget {
     this.nameController,
     this.nameFocusNode,
     this.nameValidator,
-    this.showPhoneFrame = true,
+    this.showPhoneFrame = false,
   });
 
   @override
@@ -613,91 +615,131 @@ class _RafiLoginScreenState extends State<RafiLoginScreen>
       logo: widget.logo,
     );
 
-    if (!widget.showPhoneFrame) {
-      return Semantics(
-        label: RafiLoginContent.description,
-        container: true,
-        child: Container(
-          color: RafiDesignTokens.screen,
-          child: SafeArea(
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: SizedBox(
-                  width: RafiDesignTokens.phoneWidth,
-                  height: RafiDesignTokens.phoneHeight,
-                  child: Stack(
-                    children: [
-                      // Layer 1: Sparkles & Back characters (Cookie, Bean, Sun)
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: IgnorePointer(
-                            child: CustomPaint(
-                              painter: StarsPainter(engine: _engine!),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: IgnorePointer(
-                            child: CustomPaint(
-                              painter: CharacterPainter(
-                                engine: _engine!,
-                                layer: CharacterLayer.back,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Layer 2: Interactive Login Form
-                      Positioned.fill(
-                        child: RepaintBoundary(child: formWidget),
-                      ),
-
-                      // Layer 3: Front characters (Wobble, Pebble)
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: IgnorePointer(
-                            child: CustomPaint(
-                              painter: CharacterPainter(
-                                engine: _engine!,
-                                layer: CharacterLayer.front,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Layer 4: Tap indicator
-                      ListenableBuilder(
-                        listenable: _engine!,
-                        builder: (context, _) {
-                          final state = _engine!.state;
-                          return TapIndicator(
-                            active: state.tapActive,
-                            position: state.tapPosition,
-                            scale: state.tapScale,
-                            opacity: state.tapOpacity,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    final double bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bool isKeyboardOpen = bottomInset > 0.0;
 
     return Semantics(
       label: RafiLoginContent.description,
       container: true,
-      child: DesignStage(
-        child: PhoneFrame(engine: _engine!, form: formWidget),
+      child: Material(
+        color: RafiDesignTokens.screen,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (event) {
+            _engine!.triggerTap(event.localPosition);
+          },
+          child: Stack(
+            children: [
+              // Layer 1: Front characters (Wobble, Pebble) peeking at the bottom corners
+              // When the keyboard opens, they fade out gracefully so they never cover form controls
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: isKeyboardOpen ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: CustomPaint(
+                      painter: CharacterPainter(
+                        engine: _engine!,
+                        layer: CharacterLayer.front,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Layer 2: Main Responsive Full-Screen Layout with SafeArea
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double screenWidth = constraints.maxWidth;
+                    final double screenHeight = constraints.maxHeight;
+
+                    // Standard responsive margins: 24 on phones, centered on wider displays
+                    final double horizontalPadding = screenWidth > 440.0
+                        ? 0.0
+                        : RafiDesignTokens.fieldInset;
+
+                    return SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxWidth: 400.0,
+                            minHeight: screenHeight,
+                          ),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Top character stage with Stars & Back characters (Cookie, Sun, Bean)
+                                SizedBox(
+                                  height: 190.0,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Positioned.fill(
+                                        child: RepaintBoundary(
+                                          child: IgnorePointer(
+                                            child: CustomPaint(
+                                              painter: StarsPainter(
+                                                engine: _engine!,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned.fill(
+                                        child: RepaintBoundary(
+                                          child: IgnorePointer(
+                                            child: CustomPaint(
+                                              painter: CharacterPainter(
+                                                engine: _engine!,
+                                                layer: CharacterLayer.back,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Interactive Form (Title, Subtitle, Inputs, Button, Footer)
+                                formWidget,
+
+                                // Flexible space ensuring the footer rests comfortably when content fits
+                                const Spacer(),
+                                const SizedBox(height: 24.0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Layer 3: Tap indicator ring (expands at tap position)
+              ListenableBuilder(
+                listenable: _engine!,
+                builder: (context, _) {
+                  final state = _engine!.state;
+                  return TapIndicator(
+                    active: state.tapActive,
+                    position: state.tapPosition,
+                    scale: state.tapScale,
+                    opacity: state.tapOpacity,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -15,7 +15,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.byType(RafiLoginScreen), findsOneWidget);
-    expect(find.text('Rafi Login Template Demo'), findsOneWidget);
+    expect(find.text('Welcome back'), findsOneWidget);
     expect(find.byKey(const Key('login_button')), findsOneWidget);
   });
 

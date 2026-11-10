@@ -1,6 +1,6 @@
 name: rafi_login_template
 description: "A personal-branded, reusable Flutter login UI package featuring interactive reactive vector characters and fluid animations."
-version: 1.0.0
+version: 1.1.0
 publish_to: 'none'
 
 environment:

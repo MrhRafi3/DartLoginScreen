@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rafi_login_template/rafi_login_template.dart';
-import 'package:rafi_login_template/src/presentation/widgets/design_stage.dart';
-import 'package:rafi_login_template/src/presentation/widgets/phone_frame.dart';
 
 void main() {
   Widget buildTestableScreen(
@@ -559,49 +557,82 @@ void main() {
       '14. Responsive layouts render without overflow across device sizes',
       () {
         final testSizes = [
+          const Size(360.0, 640.0), // Small Android Phone
           const Size(375.0, 667.0), // Mobile SE
           const Size(390.0, 844.0), // Mobile Modern
+          const Size(412.0, 915.0), // Tall Modern Android
           const Size(1080.0, 1080.0), // Square Artboard
           const Size(1440.0, 900.0), // Desktop / Widescreen
         ];
 
         for (final size in testSizes) {
-          testWidgets('Responsive render on ${size.width}x${size.height}', (
-            WidgetTester tester,
-          ) async {
-            tester.view.physicalSize = size;
-            tester.view.devicePixelRatio = 1.0;
-            addTearDown(tester.view.resetPhysicalSize);
-
-            await tester.pumpWidget(
-              buildTestableScreen(const RafiLoginScreen()),
-            );
-            await tester.pump(const Duration(milliseconds: 50));
-
-            expect(find.byType(DesignStage), findsOneWidget);
-            expect(find.byType(PhoneFrame), findsOneWidget);
-            expect(tester.takeException(), isNull);
-          });
-
           testWidgets(
-            'Responsive direct render without phone frame on ${size.width}x${size.height}',
+            'Responsive direct render on ${size.width}x${size.height}',
             (WidgetTester tester) async {
               tester.view.physicalSize = size;
               tester.view.devicePixelRatio = 1.0;
               addTearDown(tester.view.resetPhysicalSize);
 
               await tester.pumpWidget(
-                buildTestableScreen(
-                  const RafiLoginScreen(showPhoneFrame: false),
-                ),
+                buildTestableScreen(const RafiLoginScreen()),
               );
               await tester.pump(const Duration(milliseconds: 50));
 
+              expect(find.byType(RafiLoginScreen), findsOneWidget);
               expect(find.byKey(const Key('login_button')), findsOneWidget);
+              expect(find.byKey(const Key('identifier_field')), findsOneWidget);
+              expect(find.byKey(const Key('password_field')), findsOneWidget);
               expect(tester.takeException(), isNull);
             },
           );
         }
+
+        testWidgets(
+          'Keyboard-open state adapts responsively without overflow',
+          (WidgetTester tester) async {
+            tester.view.physicalSize = const Size(390.0, 844.0);
+            tester.view.devicePixelRatio = 1.0;
+            tester.view.viewInsets = const FakeViewPadding(bottom: 300.0);
+            addTearDown(() {
+              tester.view.resetPhysicalSize();
+              tester.view.resetViewInsets();
+            });
+
+            await tester.pumpWidget(
+              buildTestableScreen(const RafiLoginScreen()),
+            );
+            await tester.pump(const Duration(milliseconds: 50));
+
+            expect(find.byKey(const Key('identifier_field')), findsOneWidget);
+            expect(find.byKey(const Key('password_field')), findsOneWidget);
+            expect(find.byKey(const Key('login_button')), findsOneWidget);
+            expect(tester.takeException(), isNull);
+          },
+        );
+
+        testWidgets('Larger text scaling renders without RenderFlex overflow', (
+          WidgetTester tester,
+        ) async {
+          tester.view.physicalSize = const Size(390.0, 844.0);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.resetPhysicalSize);
+
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: ThemeData(fontFamily: RafiDesignTokens.fontFamily),
+              home: const MediaQuery(
+                data: MediaQueryData(textScaler: TextScaler.linear(1.5)),
+                child: Scaffold(body: RafiLoginScreen()),
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+
+          expect(find.byKey(const Key('identifier_field')), findsOneWidget);
+          expect(find.byKey(const Key('password_field')), findsOneWidget);
+          expect(find.byKey(const Key('login_button')), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        });
       },
     );
 
@@ -688,20 +719,17 @@ void main() {
     });
 
     testWidgets(
-      'showPhoneFrame: false renders full character stack without outer bezel',
+      'RafiLoginScreen renders genuine mobile screen without nested phone mockup',
       (WidgetTester tester) async {
         tester.view.physicalSize = const Size(390.0, 844.0);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
-        await tester.pumpWidget(
-          buildTestableScreen(const RafiLoginScreen(showPhoneFrame: false)),
-        );
+        await tester.pumpWidget(buildTestableScreen(const RafiLoginScreen()));
         await tester.pump(const Duration(milliseconds: 50));
 
-        // DesignStage and PhoneFrame should NOT be present
-        expect(find.byType(DesignStage), findsNothing);
-        expect(find.byType(PhoneFrame), findsNothing);
+        // Fake status bar with 9:41 time should NOT be present
+        expect(find.text(RafiLoginContent.time), findsNothing);
 
         // Core form elements and characters are rendered
         expect(find.byKey(const Key('login_button')), findsOneWidget);

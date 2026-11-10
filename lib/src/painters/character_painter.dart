@@ -66,17 +66,63 @@ class CharacterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final double w = size.width > 0.0 ? size.width : 400.0;
+    final double h = size.height > 0.0 ? size.height : 860.0;
+
     for (final CharacterRig rig in engine.rigs) {
       if (rig.member.layer != layer) continue;
-      _paintCharacter(canvas, rig);
+      _paintCharacter(canvas, rig, w, h);
     }
   }
 
-  void _paintCharacter(Canvas canvas, CharacterRig rig) {
+  void _paintCharacter(Canvas canvas, CharacterRig rig, double w, double h) {
     final MemberDefinition m = rig.member;
 
     canvas.save();
-    canvas.translate(rig.rootTranslation.dx, rig.rootTranslation.dy);
+
+    if (layer == CharacterLayer.back) {
+      // Back characters (Cookie, Sun, Bean) centered horizontally
+      final double dx = (w - 400.0) / 2.0;
+      final double scale = w < 400.0 ? (w / 400.0) : 1.0;
+      if (dx != 0.0) {
+        canvas.translate(dx, 0.0);
+      }
+      if (scale < 1.0) {
+        canvas.translate(200.0, 160.0);
+        canvas.scale(scale, scale);
+        canvas.translate(-200.0, -160.0);
+      }
+      canvas.translate(rig.rootTranslation.dx, rig.rootTranslation.dy);
+    } else {
+      // Front characters (Wobble, Pebble) anchored to bottom corners
+      final double dy = h - 860.0;
+      final double scale = w < 400.0 ? (w / 400.0) : 1.0;
+
+      // On wide displays (tablet / desktop), anchor relative to centered 400px card
+      final double cardLeft = w > 440.0 ? (w - 400.0) / 2.0 : 0.0;
+      final double cardRight = w > 440.0 ? cardLeft + 400.0 : w;
+
+      if (rig.index == 3) {
+        // Wobble (bottom-left)
+        canvas.translate(cardLeft, dy);
+        if (scale < 1.0) {
+          canvas.translate(34.0, 820.0);
+          canvas.scale(scale, scale);
+          canvas.translate(-34.0, -820.0);
+        }
+      } else if (rig.index == 4) {
+        // Pebble (bottom-right)
+        final double dx = cardRight - 400.0;
+        canvas.translate(dx, dy);
+        if (scale < 1.0) {
+          canvas.translate(350.0, 870.0);
+          canvas.scale(scale, scale);
+          canvas.translate(-350.0, -870.0);
+        }
+      }
+      canvas.translate(rig.rootTranslation.dx, rig.rootTranslation.dy);
+    }
+
     canvas.rotate(rig.rootRotationDeg * (math.pi / 180.0));
     canvas.scale(rig.scaleX, rig.scaleY);
 
