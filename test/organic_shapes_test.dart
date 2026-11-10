@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oglet/core/geometry/organic_shapes.dart';
-import 'package:oglet/data/crew_data.dart';
+import 'package:rafi_login_template/src/core/geometry/organic_shapes.dart';
+import 'package:rafi_login_template/src/data/crew_data.dart';
 
 void main() {
   group('Organic Shapes Geometry Tests', () {

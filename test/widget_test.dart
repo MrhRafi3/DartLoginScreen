@@ -1,30 +1,33 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oglet/app.dart';
-import 'package:oglet/data/oglet_content.dart';
-import 'package:oglet/presentation/widgets/design_stage.dart';
-import 'package:oglet/presentation/widgets/phone_frame.dart';
+import 'package:rafi_login_template/rafi_login_template.dart';
+import 'package:rafi_login_template/src/presentation/widgets/design_stage.dart';
+import 'package:rafi_login_template/src/presentation/widgets/phone_frame.dart';
 
 void main() {
   testWidgets(
-    'OgletApp renders DesignStage, PhoneFrame, and core UI elements',
+    'RafiLoginScreen renders DesignStage, PhoneFrame, and core UI elements',
     (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080.0, 1080.0);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(const OgletApp());
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: RafiLoginScreen(showNameField: true)),
+        ),
+      );
       // Initial frame
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(DesignStage), findsOneWidget);
       expect(find.byType(PhoneFrame), findsOneWidget);
-      expect(find.text(OgletContent.time), findsOneWidget);
-      expect(find.text(OgletContent.title), findsOneWidget);
-      expect(find.text(OgletContent.nameLabel), findsOneWidget);
-      expect(find.text(OgletContent.emailLabel), findsOneWidget);
-      expect(find.text(OgletContent.passwordLabel), findsOneWidget);
-      expect(find.textContaining(OgletContent.login), findsOneWidget);
+      expect(find.text(RafiLoginContent.time), findsOneWidget);
+      expect(find.text(RafiLoginContent.title), findsOneWidget);
+      expect(find.text(RafiLoginContent.nameLabel), findsOneWidget);
+      expect(find.text(RafiLoginContent.emailLabel), findsOneWidget);
+      expect(find.text(RafiLoginContent.passwordLabel), findsOneWidget);
+      expect(find.textContaining(RafiLoginContent.login), findsOneWidget);
     },
   );
 
@@ -45,7 +48,9 @@ void main() {
           tester.view.devicePixelRatio = 1.0;
           addTearDown(tester.view.resetPhysicalSize);
 
-          await tester.pumpWidget(const OgletApp());
+          await tester.pumpWidget(
+            const MaterialApp(home: Scaffold(body: RafiLoginScreen())),
+          );
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.byType(DesignStage), findsOneWidget);

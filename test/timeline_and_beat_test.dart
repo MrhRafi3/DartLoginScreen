@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oglet/data/oglet_content.dart';
-import 'package:oglet/data/timeline_data.dart';
+import 'package:rafi_login_template/src/data/rafi_login_content.dart';
+import 'package:rafi_login_template/src/data/timeline_data.dart';
 
 void main() {
   group('Timeline & Beat Calculation Tests', () {
@@ -18,13 +18,13 @@ void main() {
 
     test('name typing finishes by 2.4s', () {
       final BeatState bName = TimelineData.calculateBeat(2.4);
-      expect(bName.displayedName, OgletContent.name);
+      expect(bName.displayedName, RafiLoginContent.name);
       expect(bName.nameLength, 4);
     });
 
     test('email typo typed and error triggered at 4.55s', () {
       final BeatState bPreErr = TimelineData.calculateBeat(4.0);
-      expect(bPreErr.email, OgletContent.emailTypo);
+      expect(bPreErr.email, RafiLoginContent.emailTypo);
       expect(bPreErr.isError, false);
 
       final BeatState bErr = TimelineData.calculateBeat(4.55);
@@ -37,7 +37,10 @@ void main() {
 
     test('email fix ".io" typed and valid by 6.9s', () {
       final BeatState bFix = TimelineData.calculateBeat(6.9);
-      expect(bFix.email, '${OgletContent.emailTypo}${OgletContent.emailFix}');
+      expect(
+        bFix.email,
+        '${RafiLoginContent.emailTypo}${RafiLoginContent.emailFix}',
+      );
       expect(bFix.isValid, true);
       expect(bFix.isError, false);
     });

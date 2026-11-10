@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oglet/core/math/math_utils.dart';
-import 'package:oglet/core/math/spring.dart';
+import 'package:rafi_login_template/src/core/math/math_utils.dart';
+import 'package:rafi_login_template/src/core/math/spring.dart';
 
 void main() {
   group('MathUtils Tests', () {

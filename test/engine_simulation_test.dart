@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oglet/engine/oglet_animation_engine.dart';
+import 'package:rafi_login_template/src/engine/rafi_animation_engine.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -8,7 +8,7 @@ void main() {
     test(
       'Reduced motion settles cleanly to steady frame and reacts to events',
       () {
-        final engine = OgletAnimationEngine(prefersReducedMotion: true);
+        final engine = RafiAnimationEngine(prefersReducedMotion: true);
 
         // Verify clean initial idle state without automatic demo typing
         expect(engine.state.phoneOpacity, greaterThan(0.99));
@@ -36,7 +36,7 @@ void main() {
     );
 
     test('Engine responds to error and valid triggers', () {
-      final engine = OgletAnimationEngine(prefersReducedMotion: true);
+      final engine = RafiAnimationEngine(prefersReducedMotion: true);
 
       engine.triggerError();
       expect(engine.state.isError, true);
